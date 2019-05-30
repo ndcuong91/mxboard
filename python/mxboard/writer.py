@@ -479,7 +479,7 @@ class SummaryWriter(object):
             with open(extension_dir + 'tensors.json', 'w') as fp:
                 json.dump(self._text_tags, fp)
 
-    def add_embedding(self, tag, embedding, labels=None, images=None, global_step=None):
+    def add_embedding(self, tag, embedding, labels=None, names=None, images=None, global_step=None):
         """Adds embedding projector data to the event file. It will also create a config file
         used by the embedding projector in TensorBoard. The folder containing the embedding
         data is named using the formula:
@@ -520,16 +520,36 @@ class SummaryWriter(object):
         except OSError:
             logging.warning('embedding dir %s exists, files under this dir will be overwritten',
                             save_path)
-        if labels is not None:
-            if (embedding_shape[0] != len(labels) and
-                    (not _is_2D_matrix(labels) or len(labels) != embedding_shape[0] + 1)):
+
+        if names is not None:
+            if (embedding_shape[0] != len(names) and
+                    (not _is_2D_matrix(names) or len(names) != embedding_shape[0] + 1)):
                 raise ValueError('expected equal values of embedding first dim and length of '
-                                 'labels or embedding first dim + 1 for 2d labels '
+                                 'names or embedding first dim + 1 for 2d names '
                                  ', while received %d and %d for each'
-                                 % (embedding_shape[0], len(labels)))
-            if self._logger is not None:
-                self._logger.info('saved embedding labels to %s', save_path)
-            _make_metadata_tsv(labels, save_path)
+                                 % (embedding_shape[0], len(names)))
+            if labels is None:
+                if self._logger is not None:
+                    self._logger.info('saved embedding names to %s', save_path)
+                _make_metadata_tsv(names, save_path)
+            else:
+                if (embedding_shape[0] != len(labels) and
+                        (not _is_2D_matrix(labels) or len(labels) != embedding_shape[0] + 1)):
+                    raise ValueError('expected equal values of embedding first dim and length of '
+                                     'labels or embedding first dim + 1 for 2d labels '
+                                     ', while received %d and %d for each'
+                                     % (embedding_shape[0], len(labels)))
+
+                if self._logger is not None:
+                    self._logger.info('saved embedding names and names to %s', save_path)
+
+                metadata=[]
+                metadata.append(labels)
+                metadata.append(names)
+
+                _make_metadata_tsv(metadata, save_path)
+
+
         if images is not None:
             img_labels_shape = images.shape
             if embedding_shape[0] != img_labels_shape[0]:

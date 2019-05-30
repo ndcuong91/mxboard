@@ -254,6 +254,37 @@ def _make_metadata_tsv(metadata, save_path):
 
     if len(metadata.shape) == 1:
         metadata = metadata.reshape(-1, 1)
+
+    header=''
+    if len(metadata.shape) == 2:
+        metadata = metadata.transpose(1, 0)
+        header='label\tname\n'
+
+    with open(os.path.join(save_path, 'metadata.tsv'), 'w') as f:
+        f.write(header)
+        for row in metadata:
+            f.write('\t'.join([str(x) for x in row]) + '\n')
+
+def _make_metadata_tsv_customized(labels, names, save_path):
+    """Given an `NDArray` or a `numpy.ndarray` or a list as metadata e.g. labels, save the
+    flattened array into the file metadata.tsv under the path provided by the user. The
+    labels can be 1D or 2D with multiple labels per data point.
+    Made to satisfy the requirement in the following link:
+    https://www.tensorflow.org/programmers_guide/embedding#metadata"""
+    if isinstance(labels, NDArray):
+        metadata = labels.asnumpy()
+    elif isinstance(labels, list):
+        metadata = np.array(labels)
+    elif not isinstance(labels, np.ndarray):
+        raise TypeError('expected NDArray or np.ndarray or 1D/2D list, while received '
+                        'type {}'.format(str(type(labels))))
+
+    if len(metadata.shape) > 2:
+        raise TypeError('expected a 1D/2D NDArray, np.ndarray or list, while received '
+                        'shape {}'.format(str(metadata.shape)))
+
+    if len(metadata.shape) == 1:
+        metadata = metadata.reshape(-1, 1)
     with open(os.path.join(save_path, 'metadata.tsv'), 'w') as f:
         for row in metadata:
             f.write('\t'.join([str(x) for x in row]) + '\n')
